@@ -3,3 +3,4 @@
   <input type="text" formControlName="login">
   <button type="submit" [disabled]="!form.valid">Submit</button>
 </form>
+<span *ngIf="error">{{ error }}</span>

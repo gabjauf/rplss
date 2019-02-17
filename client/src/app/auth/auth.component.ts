@@ -15,6 +15,7 @@ export class AuthComponent implements OnInit {
   });
 
   login = '';
+  error = '';
 
   constructor(private _socketService: SocketService, private _fb: FormBuilder, private _router: Router) { }
 
@@ -27,11 +28,14 @@ export class AuthComponent implements OnInit {
             this._router.navigate(['/lobby']);
           }
           break;
+        case 'LOBBY':
+          this.error = 'Username is already in use';
       }
     });
   }
 
   submitForm() {
+    this.error = '';
     this.login = this.form.value.login;
     this._socketService.auth(this.form.value.login);
   }

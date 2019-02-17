@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javafx.util.Pair;
@@ -57,10 +58,14 @@ public class WebsocketServer extends WebSocketServer {
         Pair<String, String> command = messageBroker(message);
         switch (command.getKey()) {
             case "AUTH":
-                currentPlayer.login = command.getValue();
-                lobby.add(currentPlayer);
-                broadcastLobby();
-                broadcastLobbyJoined(currentPlayer);
+                if (isLoginValid(command.getValue())) {
+                    currentPlayer.login = command.getValue();
+                    lobby.add(currentPlayer);
+                    broadcastLobbyJoined(currentPlayer);
+                    broadcastLobby();
+                } else {
+                    sendLobby(currentPlayer);
+                }
                 break;
             case "CHAT":
                 broadcastChat(message);
@@ -95,12 +100,23 @@ public class WebsocketServer extends WebSocketServer {
         return new Pair<String, String>(command, parameters);
     }
 
+    public boolean isLoginValid(String login) {
+        List<String> playersLogin = lobby.stream().map(p -> p.login).collect(Collectors.toList());
+        return !playersLogin.contains(login);
+    }
+
     public void broadcastLobby() {
         String[] playersLogin = lobby.stream().map(p -> p.login).toArray(String[]::new);
         String joinedLogins = String.join("_", playersLogin);
         for (Player player : lobby) {
             player.socket.send(padRight("LOBBY") + joinedLogins + "\n");
         }
+    }
+
+    public void sendLobby(Player player) {
+        String[] playersLogin = lobby.stream().map(p -> p.login).toArray(String[]::new);
+        String joinedLogins = String.join("_", playersLogin);
+        player.socket.send(padRight("LOBBY") + joinedLogins + "\n");
     }
 
     public void broadcastLobbyJoined(Player player) {
