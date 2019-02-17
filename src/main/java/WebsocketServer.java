@@ -1,3 +1,4 @@
+import io.reactivex.Observable;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -5,9 +6,11 @@ import org.java_websocket.server.WebSocketServer;
 import javax.persistence.Tuple;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import io.reactivex.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -18,12 +21,13 @@ public class WebsocketServer extends WebSocketServer {
     private Set<Player> players;
     private HashMap<WebSocket, Player> socketPlayerHashMap;
     private List<Player> lobby;
-    private Set<Game> games;
+    private HashMap<Player, Game> games;
 
     public WebsocketServer(int port) {
         super(new InetSocketAddress(port));
         players = new HashSet<>();
         lobby = new ArrayList<>();
+        games = new HashMap<>();
         socketPlayerHashMap = new HashMap<>();
     }
 
@@ -53,10 +57,12 @@ public class WebsocketServer extends WebSocketServer {
     public void onMessage(WebSocket conn, String message) {
         System.out.println("Message from client: " + message);
         Player currentPlayer = socketPlayerHashMap.get(conn);
-        Pair<String, String> command = messageBroker(message);
+        Pair<String, String> command = socketHelper.messageBroker(message);
+        currentPlayer.incommingMessage.onNext(command);
         switch (command.getKey()) {
             case "AUTH":
                 if (isLoginValid(command.getValue())) {
+                    currentPlayer.authTimer.dispose();
                     currentPlayer.login = command.getValue();
                     lobby.add(currentPlayer);
                     broadcastLobbyJoined(currentPlayer);
@@ -65,7 +71,8 @@ public class WebsocketServer extends WebSocketServer {
                         Player player1 = lobby.get(0);
                         Player player2 = lobby.get(1);
                         Game newGame = new Game(player1, player2);
-                        games.add(newGame);
+                        games.put(player1, newGame);
+                        games.put(player2, newGame);
                     }
                 } else {
                     sendLobby(currentPlayer);
@@ -98,12 +105,6 @@ public class WebsocketServer extends WebSocketServer {
         System.out.println("rplss Server is Running");
     }
 
-    private Pair<String, String> messageBroker(String message) {
-        String command = message.substring(0, 15).substring( 0, message.indexOf( "-" ) );
-        String parameters = message.substring(16, message.indexOf( "\n" ));
-        return new Pair<String, String>(command, parameters);
-    }
-
     public boolean isLoginValid(String login) {
         List<String> playersLogin = lobby.stream().map(p -> p.login).collect(Collectors.toList());
         return !playersLogin.contains(login);
@@ -113,25 +114,25 @@ public class WebsocketServer extends WebSocketServer {
         String[] playersLogin = lobby.stream().map(p -> p.login).toArray(String[]::new);
         String joinedLogins = String.join("_", playersLogin);
         for (Player player : lobby) {
-            player.socket.send(padRight("LOBBY") + joinedLogins + "\n");
+            player.socket.send(socketHelper.padRight("LOBBY") + joinedLogins + "\n");
         }
     }
 
     public void sendLobby(Player player) {
         String[] playersLogin = lobby.stream().map(p -> p.login).toArray(String[]::new);
         String joinedLogins = String.join("_", playersLogin);
-        player.socket.send(padRight("LOBBY") + joinedLogins + "\n");
+        player.socket.send(socketHelper.padRight("LOBBY") + joinedLogins + "\n");
     }
 
     public void broadcastLobbyJoined(Player player) {
         for (Player lobbyPlayer : lobby) {
-            lobbyPlayer.socket.send(padRight("LOBBY_JOINED") + player.login + "\n");
+            lobbyPlayer.socket.send(socketHelper.padRight("LOBBY_JOINED") + player.login + "\n");
         }
     }
 
     public void broadcastLobbyLeft(Player player) {
         for (Player lobbyPlayer : lobby) {
-            lobbyPlayer.socket.send(padRight("LOBBY_LEFT") + player.login + "\n");
+            lobbyPlayer.socket.send(socketHelper.padRight("LOBBY_LEFT") + player.login + "\n");
         }
     }
 
@@ -139,9 +140,5 @@ public class WebsocketServer extends WebSocketServer {
         for (Player player : lobby) {
             player.socket.send(message);
         }
-    }
-
-    public static String padRight(String s) {
-        return s + "----------------".substring(s.length());
     }
 }

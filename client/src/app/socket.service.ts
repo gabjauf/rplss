@@ -42,8 +42,12 @@ export class SocketService {
     };
   }
 
-  public auth(login) {
-    return this.socket.send('AUTH------------' + login + '\n');
+  public auth(login: string) {
+    return this.socket.send(`AUTH------------${login}\n`);
+  }
+
+  public sendGesture(gesture: string) {
+    return this.socket.send(`MOVE------------${gesture}\n`);
   }
 
   parseMessage(message: string) {

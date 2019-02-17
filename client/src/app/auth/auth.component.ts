@@ -21,7 +21,6 @@ export class AuthComponent implements OnInit {
 
   ngOnInit() {
     this._socketService.onMessage.subscribe((message) => {
-      console.log(message);
       switch (message.command) {
         case 'LOBBY_JOINED':
           if (message.parameters === this.login) {
