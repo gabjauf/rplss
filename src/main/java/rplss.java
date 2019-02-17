@@ -17,8 +17,7 @@ public class rplss {
         int port = 4242;
 
         WebsocketServer server = new WebsocketServer(port) ;
-        server.start();
-        System.out.println("rplss Server is Running");
+        server.run();
 
             // Game game = new Game(player1, player2);
 

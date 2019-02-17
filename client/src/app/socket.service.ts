@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as socketIo from 'socket.io-client';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
 const SERVER_URL = 'ws://127.0.0.1:4242';
 
@@ -10,6 +10,7 @@ const SERVER_URL = 'ws://127.0.0.1:4242';
 export class SocketService {
 
   private socket;
+  public onMessage = new Subject();
 
     public initSocket(): void {
         // this.socket = socketIo(SERVER_URL);
@@ -19,6 +20,7 @@ export class SocketService {
         };
         this.socket.onmessage = (ev) => {
           console.log('Response from server: ' + ev.data);
+          this.onMessage.next(ev.data);
         };
         this.socket.onclose = (ev) => {
           console.log('Connection closed.', ev);
@@ -28,20 +30,10 @@ export class SocketService {
         };
     }
 
-    public onMessage(): Observable<any> {
-        return new Observable<any>(observer => {
-            this.socket.on('message', (data: any) => observer.next(data));
-        });
-    }
-
     public onEvent(event: Event): Observable<any> {
         return new Observable<any>(observer => {
             this.socket.on(event, () => observer.next());
         });
-    }
-
-    public authReq() {
-      return this.socket.send('AUTH_REQ--------\n');
     }
 
     public auth(login) {

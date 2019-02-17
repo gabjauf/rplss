@@ -16,10 +16,12 @@ export class AuthComponent implements OnInit {
   constructor(private _socketService: SocketService, private _fb: FormBuilder) { }
 
   ngOnInit() {
+    this._socketService.onMessage.subscribe((message) => {
+      console.log(message);
+    });
   }
 
   submitForm() {
-    this._socketService.authReq();
     this._socketService.auth(this.form.value.login);
   }
 
