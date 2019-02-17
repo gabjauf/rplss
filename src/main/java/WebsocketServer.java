@@ -7,10 +7,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,12 +17,13 @@ public class WebsocketServer extends WebSocketServer {
 
     private Set<Player> players;
     private HashMap<WebSocket, Player> socketPlayerHashMap;
-    private Set<Player> lobby;
+    private List<Player> lobby;
+    private Set<Game> games;
 
     public WebsocketServer(int port) {
         super(new InetSocketAddress(port));
         players = new HashSet<>();
-        lobby = new HashSet<>();
+        lobby = new ArrayList<>();
         socketPlayerHashMap = new HashMap<>();
     }
 
@@ -63,6 +61,12 @@ public class WebsocketServer extends WebSocketServer {
                     lobby.add(currentPlayer);
                     broadcastLobbyJoined(currentPlayer);
                     broadcastLobby();
+                    if (lobby.size() > 1) {
+                        Player player1 = lobby.get(0);
+                        Player player2 = lobby.get(1);
+                        Game newGame = new Game(player1, player2);
+                        games.add(newGame);
+                    }
                 } else {
                     sendLobby(currentPlayer);
                 }
@@ -132,7 +136,7 @@ public class WebsocketServer extends WebSocketServer {
     }
 
     public void broadcastChat(String message) {
-        for (Player player : players) {
+        for (Player player : lobby) {
             player.socket.send(message);
         }
     }
