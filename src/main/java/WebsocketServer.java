@@ -45,6 +45,8 @@ public class WebsocketServer extends WebSocketServer {
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         Player toRemove = socketPlayerHashMap.get(conn);
         players.remove(toRemove);
+        lobby.remove(toRemove);
+        broadcastLobbyLeft(toRemove);
         System.out.println("Closed connection to " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
     }
 
@@ -57,16 +59,11 @@ public class WebsocketServer extends WebSocketServer {
             case "AUTH":
                 currentPlayer.login = command.getValue();
                 lobby.add(currentPlayer);
-                String[] playersLogin = lobby.stream().map(p -> p.login).toArray(String[]::new);
-                String joinedLogins = String.join("_", playersLogin);
-                for (Player player : lobby) {
-                    player.socket.send(padRight("LOBBY") + joinedLogins);
-                }
+                broadcastLobby();
+                broadcastLobbyJoined(currentPlayer);
                 break;
             case "CHAT":
-                for (Player player : players) {
-                    player.socket.send(command.getValue());
-                }
+                broadcastChat(message);
                 break;
             default:
                 System.out.println("Invalid command: " + command.getKey());
@@ -96,6 +93,32 @@ public class WebsocketServer extends WebSocketServer {
         String command = message.substring(0, 15).substring( 0, message.indexOf( "-" ) );
         String parameters = message.substring(16, message.indexOf( "\n" ));
         return new Pair<String, String>(command, parameters);
+    }
+
+    public void broadcastLobby() {
+        String[] playersLogin = lobby.stream().map(p -> p.login).toArray(String[]::new);
+        String joinedLogins = String.join("_", playersLogin);
+        for (Player player : lobby) {
+            player.socket.send(padRight("LOBBY") + joinedLogins + "\n");
+        }
+    }
+
+    public void broadcastLobbyJoined(Player player) {
+        for (Player lobbyPlayer : lobby) {
+            lobbyPlayer.socket.send(padRight("LOBBY_JOINED") + player.login + "\n");
+        }
+    }
+
+    public void broadcastLobbyLeft(Player player) {
+        for (Player lobbyPlayer : lobby) {
+            lobbyPlayer.socket.send(padRight("LOBBY_LEFT") + player.login + "\n");
+        }
+    }
+
+    public void broadcastChat(String message) {
+        for (Player player : players) {
+            player.socket.send(message);
+        }
     }
 
     public static String padRight(String s) {
