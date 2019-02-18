@@ -25,6 +25,7 @@ export class AuthComponent implements OnInit {
         case 'LOBBY_JOINED':
           if (message.parameters === this.login) {
             this._router.navigate(['/lobby']);
+            this._socketService.login = this.login;
           }
           break;
         case 'LOBBY':

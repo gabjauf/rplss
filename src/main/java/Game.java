@@ -32,7 +32,9 @@ public class Game extends Thread {
         this.player1 = player1;
         this.player2 = player2;
         this.moveList = new ArrayList<Move>();
-        player1.incommingMessage.subscribe(message -> {
+        player1.incommingMessage
+            .doOnError(e -> e.printStackTrace())
+            .subscribe(message -> {
             System.out.println("InGame1: " + message.getKey());
             switch (message.getKey()) {
                 case "MOVE":
@@ -40,7 +42,9 @@ public class Game extends Thread {
                     break;
             }
         });
-        player2.incommingMessage.subscribe(message -> {
+        player2.incommingMessage
+            .doOnError(e -> e.printStackTrace())
+            .subscribe(message -> {
             System.out.println("InGame1: " + message.getKey());
             switch (message.getKey()) {
                 case "MOVE":
@@ -92,6 +96,9 @@ public class Game extends Thread {
 
     public void run() {
         try {
+            String firstMoveReq = socketHelper.padRight("MOVE_REQ") + "\n";
+            player1.socket.send(firstMoveReq);
+            player2.socket.send(firstMoveReq);
             Observable.interval(10, TimeUnit.SECONDS)
                     .doOnError(e -> e.printStackTrace())
                     .take(5)
@@ -145,7 +152,7 @@ public class Game extends Thread {
     private String buildReport() {
          String[] moves = moveList.stream().map(move -> {
             Object[] params = new Object[]{ move.time, move.player1move, move.player2move};
-            return MessageFormat.format("<move time=\"{0}\" player1=\"{1]\" player2=\"{2]\" />", params);
+            return MessageFormat.format("<move time=\"{0}\" player1=\"{1}\" player2=\"{2}\" />", params);
         }).toArray(String[]::new);
         return String.join("", moves);
     }

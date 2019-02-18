@@ -58,7 +58,6 @@ public class WebsocketServer extends WebSocketServer {
         System.out.println("Message from client: " + message);
         Player currentPlayer = socketPlayerHashMap.get(conn);
         Pair<String, String> command = socketHelper.messageBroker(message);
-        currentPlayer.incommingMessage.onNext(command);
         switch (command.getKey()) {
             case "AUTH":
                 if (isLoginValid(command.getValue())) {
@@ -80,6 +79,9 @@ public class WebsocketServer extends WebSocketServer {
                 break;
             case "CHAT":
                 broadcastChat(message);
+                break;
+            case "MOVE":
+                currentPlayer.incommingMessage.onNext(command);
                 break;
             default:
                 System.out.println("Invalid command: " + command.getKey());
