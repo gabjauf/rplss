@@ -12,8 +12,11 @@ import java.util.stream.Collectors;
 
 public class Game extends Thread {
 
+    final int MAX_MOVE = 5;
+
     Player player1;
     Player player2;
+    Date date;
 
     public int moveCount = 0;
 
@@ -31,6 +34,7 @@ public class Game extends Thread {
     Game(Player player1, Player player2) {
         this.player1 = player1;
         this.player2 = player2;
+        this.date = new Date();
         this.moveList = new ArrayList<Move>();
         player1.incommingMessage
             .doOnError(e -> e.printStackTrace())
@@ -96,16 +100,22 @@ public class Game extends Thread {
 
     public void run() {
         try {
-            String firstMoveReq = socketHelper.padRight("MOVE_REQ") + "\n";
-            player1.socket.send(firstMoveReq);
-            player2.socket.send(firstMoveReq);
+
             Observable.interval(10, TimeUnit.SECONDS)
                     .doOnError(e -> e.printStackTrace())
-                    .take(5)
+                    .doOnSubscribe(e -> {
+                        String firstMoveReq = socketHelper.padRight("MOVE_REQ") + "\n";
+                        player1.socket.send(firstMoveReq);
+                        player2.socket.send(firstMoveReq);
+                    })
+                    .take(MAX_MOVE)
                     .doOnComplete(onGameEnd())
-                    .subscribe(time -> {
+                    .doOnNext(time -> {
                         String statusMessage;
-                        if (!legalMove(player1Move)) {
+                        if (!legalMove(player2Move) && !legalMove(player1Move)) {
+                            updateGame(0);
+                            statusMessage = statusMessage(0);
+                        } else if (!legalMove(player1Move)) {
                             updateGame(2);
                             statusMessage = statusMessage(2);
 
@@ -119,12 +129,16 @@ public class Game extends Thread {
                         }
                         Move move = new Move(new Date(), player1Move, player2Move);
                         moveList.add(move);
-                        String moveReq = socketHelper.padRight("MOVE_REQ") + "\n";
+                        player1Move = null;
+                        player2Move = null;
                         player1.socket.send(statusMessage);
                         player2.socket.send(statusMessage);
-                        player1.socket.send(moveReq);
-                        player2.socket.send(moveReq);
-                    });
+                        if (moveCount < MAX_MOVE) {
+                            String moveReq = socketHelper.padRight("MOVE_REQ") + "\n";
+                            player1.socket.send(moveReq);
+                            player2.socket.send(moveReq);
+                        }
+                    }).subscribe();
         } catch (Exception e) {
             System.out.println("Player died: " + e);
         }
