@@ -19,9 +19,6 @@ export class GameComponent implements OnInit {
     playerScore: 0,
     opponentScore: 0
   };
-  gameOver = false;
-  report = '';
-  gameOverMessage = '';
   MOVE_TIMEOUT = environment.MOVE_TIMEOUT;
 
   constructor(private _socketService: SocketService, private _router: Router) {}
@@ -37,20 +34,20 @@ export class GameComponent implements OnInit {
           this.setStatus(message.parameters);
           break;
         case 'REPORT':
-          this.report = message.parameters;
+          this._socketService.report.next(message.parameters);
           break;
         case 'WIN':
         case 'LOSE':
           this.onGameEnd(message.parameters);
           break;
+        case 'LOBBY_JOINED':
+          if (message.parameters === this.login) {
+            this._router.navigate(['/lobby']);
+            this._socketService.login = this.login;
+          }
+          break;
       }
     });
-  }
-
-  downloadReport() {
-    const blob = new Blob([this.report], { type: 'text/xml' });
-    const url = window.URL.createObjectURL(blob);
-    window.open(url);
   }
 
   resetTimer() {
@@ -60,8 +57,7 @@ export class GameComponent implements OnInit {
   }
 
   onGameEnd(parameters) {
-    this.gameOver = true;
-    this.gameOverMessage = this.parseEndGameMessage(parameters);
+    this._socketService.gameMessage.next(this.parseEndGameMessage(parameters));
   }
 
   parseEndGameMessage(parameters) {

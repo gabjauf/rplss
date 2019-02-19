@@ -1,4 +1,5 @@
 import io.reactivex.Observable;
+import io.reactivex.subjects.PublishSubject;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -22,6 +23,7 @@ public class WebsocketServer extends WebSocketServer {
     private HashMap<WebSocket, Player> socketPlayerHashMap;
     private List<Player> lobby;
     private HashMap<Player, Game> games;
+    private PublishSubject<Pair<Player, Player>> gameCallback;
     private int port;
 
     public WebsocketServer(int port) {
@@ -30,7 +32,17 @@ public class WebsocketServer extends WebSocketServer {
         players = new HashSet<>();
         lobby = new ArrayList<>();
         games = new HashMap<>();
+        gameCallback =  PublishSubject.create();
         socketPlayerHashMap = new HashMap<>();
+        gameCallback.subscribe(playerPair -> {
+            Player player1 = playerPair.getKey();
+            Player player2 = playerPair.getValue();
+            games.remove(player1);
+            games.remove(player2);
+            broadcastLobbyJoined(player1);
+            broadcastLobbyJoined(player2);
+            broadcastLobby();
+        }, error -> error.printStackTrace());
     }
 
     @Override
@@ -50,7 +62,6 @@ public class WebsocketServer extends WebSocketServer {
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         Player toRemove = socketPlayerHashMap.get(conn);
         players.remove(toRemove);
-        lobby.remove(toRemove);
         broadcastLobbyLeft(toRemove);
         System.out.println("Closed connection to " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
     }
@@ -65,13 +76,12 @@ public class WebsocketServer extends WebSocketServer {
                 if (isLoginValid(command.getValue())) {
                     currentPlayer.authTimer.dispose();
                     currentPlayer.login = command.getValue();
-                    lobby.add(currentPlayer);
                     broadcastLobbyJoined(currentPlayer);
                     broadcastLobby();
                     if (lobby.size() > 1) {
                         Player player1 = lobby.get(0);
                         Player player2 = lobby.get(1);
-                        Game newGame = new Game(player1, player2);
+                        Game newGame = new Game(player1, player2, gameCallback);
                         games.put(player1, newGame);
                         games.put(player2, newGame);
                         broadcastLobbyLeft(player1);
@@ -112,7 +122,7 @@ public class WebsocketServer extends WebSocketServer {
     }
 
     public boolean isLoginValid(String login) {
-        List<String> playersLogin = lobby.stream().map(p -> p.login).collect(Collectors.toList());
+        List<String> playersLogin = players.stream().map(p -> p.login).collect(Collectors.toList());
         return !playersLogin.contains(login);
     }
 
@@ -131,12 +141,14 @@ public class WebsocketServer extends WebSocketServer {
     }
 
     public void broadcastLobbyJoined(Player player) {
+        lobby.add(player);
         for (Player lobbyPlayer : lobby) {
             lobbyPlayer.socket.send(socketHelper.padRight("LOBBY_JOINED") + player.login + "\n");
         }
     }
 
     public void broadcastLobbyLeft(Player player) {
+        lobby.remove(player);
         for (Player lobbyPlayer : lobby) {
             lobbyPlayer.socket.send(socketHelper.padRight("LOBBY_LEFT") + player.login + "\n");
         }

@@ -2,6 +2,7 @@ import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Predicate;
+import io.reactivex.subjects.PublishSubject;
 
 import javax.lang.model.type.ArrayType;
 import java.lang.reflect.Array;
@@ -10,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import javafx.util.Pair;
 
 public class Game extends Thread {
 
@@ -25,6 +27,8 @@ public class Game extends Thread {
     public int scorePlayer1 = 0;
     public int scorePlayer2 = 0;
 
+    PublishSubject gameCallback;
+
     String player1Move;
     String player2Move;
 
@@ -38,10 +42,11 @@ public class Game extends Thread {
             : 10;
 
 
-    Game(Player player1, Player player2) {
+    Game(Player player1, Player player2, PublishSubject gameCallback) {
         this.player1 = player1;
         this.player2 = player2;
         this.date = System.currentTimeMillis();
+        this.gameCallback = gameCallback;
         this.moveList = new ArrayList<Move>();
         player1.incommingMessage
             .doOnError(e -> e.printStackTrace())
@@ -177,6 +182,7 @@ public class Game extends Thread {
                 }
                 player1.socket.send(report);
                 player2.socket.send(report);
+                gameCallback.onNext(new Pair(player1, player2));
             }
         };
     }

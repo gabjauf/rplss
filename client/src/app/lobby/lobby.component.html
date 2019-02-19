@@ -1,4 +1,8 @@
-<p>
-  lobby works!
-</p>
+<ng-container *ngIf="report">
+  <h1>Last game</h1>
+  {{ gameOverMessage | async }}
+  <button *ngIf="report$ | async as report" (click)="downloadReport(report)">Download Report</button>
+</ng-container>
+
+<h1>Currently logged in players</h1>
 <button *ngFor="let player of lobby | async">{{ player }}</button>

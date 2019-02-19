@@ -1,7 +1,6 @@
 <p>
   Game
 </p>
-<ng-container *ngIf="!gameOver; else displayWinner">
   <ng-container *ngIf="timer; else loading">
     <div>{{ timer | async }} seconds left</div>
     <div>last winner: {{ status.winner }}</div>
@@ -12,9 +11,4 @@
   <ng-template #loading>
     <div>The game will soon begin...</div>
   </ng-template>
-</ng-container>
 
-<ng-template #displayWinner>
-  {{ gameOverMessage }}
-  <button (click)="downloadReport()">Download Report</button>
-</ng-template>

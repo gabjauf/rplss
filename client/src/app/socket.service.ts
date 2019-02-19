@@ -11,6 +11,8 @@ export class SocketService {
   private socket;
   public onMessage = new Subject<any>();
   public lobby = new ReplaySubject<any>(1);
+  public gameMessage = new ReplaySubject<any>(1);
+  public report = new ReplaySubject<any>(1);
   public login: string;
 
   constructor(private _router: Router) {
