@@ -5,6 +5,7 @@ import org.java_websocket.WebSocket;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.*;
@@ -20,6 +21,10 @@ public class Player extends Thread {
     PrintWriter output;
     Subscription authReq;
     Disposable authTimer;
+    Map<String, String> env = System.getenv();
+    int LOGIN_TIMEOUT = env.containsKey("RPSLS_LOGIN_TIMEOUT") ?
+            Integer.parseInt(env.get("RPSLS_LOGIN_TIMEOUT"))
+            : 20;
     public PublishSubject<Pair<String, String>> incommingMessage;
 
     public Player(WebSocket socket) throws IOException {
@@ -29,18 +34,14 @@ public class Player extends Thread {
 
     }
 
-    public void setOpponent(Player opponent) {
-        this.opponent = opponent;
-    }
-
     public void run() {
         try {
             incommingMessage.subscribe(message -> System.out.println(message.getKey()));
             socket.send("AUTH_REQ--------\n");
             authTimer = Observable
-                    .interval(5, TimeUnit.SECONDS)
+                    .interval(LOGIN_TIMEOUT, TimeUnit.SECONDS)
                     .doOnError(e -> e.printStackTrace())
-                    .subscribe( time -> sendAuthReq());
+                    .subscribe( time -> sendAuthReq(), erro -> erro.printStackTrace());
         } catch (Exception e) {
             System.out.println("Player died: " + e);
         }

@@ -1,6 +1,7 @@
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
+import io.reactivex.functions.Predicate;
 
 import javax.lang.model.type.ArrayType;
 import java.lang.reflect.Array;
@@ -12,11 +13,12 @@ import java.util.stream.Collectors;
 
 public class Game extends Thread {
 
-    final int MAX_MOVE = 5;
+    final int SCORE_TO_WIN = 3;
 
     Player player1;
     Player player2;
-    Date date;
+    Long date;
+    Long warmupTime;
 
     public int moveCount = 0;
 
@@ -30,11 +32,16 @@ public class Game extends Thread {
 
     Disposable gameTimer;
 
+    Map<String, String> env = System.getenv();
+    int MOVE_TIMEOUT = env.containsKey("RPSLS_MOVE_TIMEOUT") ?
+            Integer.parseInt(env.get("RPSLS_MOVE_TIMEOUT"))
+            : 10;
+
 
     Game(Player player1, Player player2) {
         this.player1 = player1;
         this.player2 = player2;
-        this.date = new Date();
+        this.date = System.currentTimeMillis();
         this.moveList = new ArrayList<Move>();
         player1.incommingMessage
             .doOnError(e -> e.printStackTrace())
@@ -58,7 +65,10 @@ public class Game extends Thread {
         });
         this.player1.sendAuthReq();
         this.player2.sendAuthReq();
-        Observable.timer(5, TimeUnit.SECONDS).subscribe(time -> this.run());
+        Observable.timer(5, TimeUnit.SECONDS).subscribe(time -> {
+            this.run();
+            this.warmupTime = System.currentTimeMillis();
+        });
     }
 
     final Map<String, List<String>> gestureWinTable = Map.of(
@@ -101,14 +111,14 @@ public class Game extends Thread {
     public void run() {
         try {
 
-            Observable.interval(10, TimeUnit.SECONDS)
+            Observable.interval(MOVE_TIMEOUT, TimeUnit.SECONDS)
                     .doOnError(e -> e.printStackTrace())
                     .doOnSubscribe(e -> {
                         String firstMoveReq = socketHelper.padRight("MOVE_REQ") + "\n";
                         player1.socket.send(firstMoveReq);
                         player2.socket.send(firstMoveReq);
                     })
-                    .take(MAX_MOVE)
+                    .takeUntil(i -> !!gameOver())
                     .doOnComplete(onGameEnd())
                     .doOnNext(time -> {
                         String statusMessage;
@@ -127,13 +137,13 @@ public class Game extends Thread {
                             updateGame(winner);
                             statusMessage = statusMessage(winner);
                         }
-                        Move move = new Move(new Date(), player1Move, player2Move);
+                        Move move = new Move(System.currentTimeMillis(), player1Move, player2Move);
                         moveList.add(move);
                         player1Move = null;
                         player2Move = null;
                         player1.socket.send(statusMessage);
                         player2.socket.send(statusMessage);
-                        if (moveCount < MAX_MOVE) {
+                        if (!gameOver()) {
                             String moveReq = socketHelper.padRight("MOVE_REQ") + "\n";
                             player1.socket.send(moveReq);
                             player2.socket.send(moveReq);
@@ -144,31 +154,62 @@ public class Game extends Thread {
         }
     }
 
+    boolean gameOver() {
+        return scorePlayer1 >= SCORE_TO_WIN | scorePlayer2 >= SCORE_TO_WIN;
+    }
+
     Action onGameEnd() {
         return new Action() {
             @Override
             public void run() throws Exception {
+                String report;
                 if (scorePlayer1 > scorePlayer2) {
                     player1.socket.send(winMessage(1));
                     player2.socket.send(loseMessage(1));
+                    report = buildReport(1);
                 }
-                if (scorePlayer2 > scorePlayer1) {
+                else if (scorePlayer2 > scorePlayer1) {
                     player2.socket.send(winMessage(2));
                     player1.socket.send(loseMessage(2));
+                    report = buildReport(2);
+                } else {
+                    report = buildReport(0);
                 }
-                String report = buildReport();
                 player1.socket.send(report);
                 player2.socket.send(report);
             }
         };
     }
 
-    private String buildReport() {
-         String[] moves = moveList.stream().map(move -> {
-            Object[] params = new Object[]{ move.time, move.player1move, move.player2move};
+    private String moveReport() {
+        String[] moves = moveList.stream().map(move -> {
+            Object[] params = new Object[]{ move.time.toString(), move.player1move, move.player2move};
             return MessageFormat.format("<move time=\"{0}\" player1=\"{1}\" player2=\"{2}\" />", params);
         }).toArray(String[]::new);
         return String.join("", moves);
+    }
+
+    private String warmupReport() {
+        Object[] params = new Object[]{ warmupTime, player1.login, player2.login };
+        return MessageFormat.format("<warmup time=\"{0}\"><check for=\"{1}\"/><check for=\"{2}\"/></warmup>", params);
+    }
+
+    private String buildReport(int winner) {
+        String winnerLogin;
+        switch(winner) {
+            case 1:
+                winnerLogin = player1.login;
+                break;
+            case 2:
+                winnerLogin = player2.login;
+                break;
+            default:
+                winnerLogin = "";
+                break;
+        }
+        Object[] params = new Object[]{ player1.login, player2.login, winnerLogin, date };
+        String gameReport = MessageFormat.format("<game player1=\"{0}\" player2=\"{1}\" winner=\"{2}\" time=\"{3}\">", params);
+        return socketHelper.padRight("REPORT") + gameReport + warmupReport() + moveReport() + "</game>\n";
     }
 
     private String statusMessage(int winner) {
@@ -193,9 +234,9 @@ public class Game extends Thread {
 
     private String loseMessage(int winner) {
         if (winner == 2)
-            return socketHelper.padRight("LOSE") + player1.login + ";" + player2.login + ";" + scorePlayer2 + "\n";
-        else if (winner == 1)
             return socketHelper.padRight("LOSE") + player2.login + ";" + player1.login + ";" + scorePlayer1 + "\n";
+        else if (winner == 1)
+            return socketHelper.padRight("LOSE") + player1.login + ";" + player2.login + ";" + scorePlayer2 + "\n";
         return "";
     }
 

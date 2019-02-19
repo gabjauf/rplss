@@ -3,6 +3,7 @@ import { SocketService } from '../socket.service';
 import { Router } from '@angular/router';
 import { Observable, interval } from 'rxjs';
 import { take, map, startWith } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-game',
@@ -18,6 +19,10 @@ export class GameComponent implements OnInit {
     playerScore: 0,
     opponentScore: 0
   };
+  gameOver = false;
+  report = '';
+  gameOverMessage = '';
+  MOVE_TIMEOUT = environment.MOVE_TIMEOUT;
 
   constructor(private _socketService: SocketService, private _router: Router) {}
 
@@ -31,15 +36,39 @@ export class GameComponent implements OnInit {
         case 'STATUS':
           this.setStatus(message.parameters);
           break;
-
+        case 'REPORT':
+          this.report = message.parameters;
+          break;
+        case 'WIN':
+        case 'LOSE':
+          this.onGameEnd(message.parameters);
+          break;
       }
     });
   }
 
+  downloadReport() {
+    const blob = new Blob([this.report], { type: 'text/xml' });
+    const url = window.URL.createObjectURL(blob);
+    window.open(url);
+  }
+
   resetTimer() {
-    const start = 10;
+    const start = this.MOVE_TIMEOUT;
     this.timer = interval(1000)
     .pipe(take(start), map(i => start - i - 1), startWith(start));
+  }
+
+  onGameEnd(parameters) {
+    this.gameOver = true;
+    this.gameOverMessage = this.parseEndGameMessage(parameters);
+  }
+
+  parseEndGameMessage(parameters) {
+    const [winner, loser, loserScore] = parameters.split(';');
+    return winner === this.login ?
+      `you won 8 to ${loserScore} against ${loser}`
+      : `you lost 8 to ${loserScore} against ${winner}`;
   }
 
   setStatus(status) {

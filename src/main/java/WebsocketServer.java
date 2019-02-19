@@ -22,9 +22,11 @@ public class WebsocketServer extends WebSocketServer {
     private HashMap<WebSocket, Player> socketPlayerHashMap;
     private List<Player> lobby;
     private HashMap<Player, Game> games;
+    private int port;
 
     public WebsocketServer(int port) {
         super(new InetSocketAddress(port));
+        this.port = port;
         players = new HashSet<>();
         lobby = new ArrayList<>();
         games = new HashMap<>();
@@ -72,6 +74,8 @@ public class WebsocketServer extends WebSocketServer {
                         Game newGame = new Game(player1, player2);
                         games.put(player1, newGame);
                         games.put(player2, newGame);
+                        broadcastLobbyLeft(player1);
+                        broadcastLobbyLeft(player2);
                     }
                 } else {
                     sendLobby(currentPlayer);
@@ -104,7 +108,7 @@ public class WebsocketServer extends WebSocketServer {
 
     @Override
     public void onStart() {
-        System.out.println("rplss Server is Running");
+        System.out.println("rplss Server is Running on port " + port);
     }
 
     public boolean isLoginValid(String login) {
