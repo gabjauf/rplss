@@ -52,6 +52,10 @@ export class SocketService {
     return this.socket.send(`MOVE------------${gesture}\n`);
   }
 
+  public sendChatMessage(message: string) {
+    return this.socket.send(`CHAT------------${this.login};${message}\n`);
+  }
+
   parseMessage(message: string) {
     return {
       command: message.substring(0, 15).substring(0, message.indexOf('-')),

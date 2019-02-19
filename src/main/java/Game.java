@@ -196,7 +196,7 @@ public class Game extends Thread {
     }
 
     private String warmupReport() {
-        Object[] params = new Object[]{ warmupTime, player1.login, player2.login };
+        Object[] params = new Object[]{ warmupTime.toString(), player1.login, player2.login };
         return MessageFormat.format("<warmup time=\"{0}\"><check for=\"{1}\"/><check for=\"{2}\"/></warmup>", params);
     }
 
@@ -213,7 +213,7 @@ public class Game extends Thread {
                 winnerLogin = "";
                 break;
         }
-        Object[] params = new Object[]{ player1.login, player2.login, winnerLogin, date };
+        Object[] params = new Object[]{ player1.login, player2.login, winnerLogin, date.toString() };
         String gameReport = MessageFormat.format("<game player1=\"{0}\" player2=\"{1}\" winner=\"{2}\" time=\"{3}\">", params);
         return socketHelper.padRight("REPORT") + gameReport + warmupReport() + moveReport() + "</game>\n";
     }

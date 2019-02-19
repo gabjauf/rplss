@@ -1,8 +1,19 @@
-<ng-container *ngIf="report">
+<ng-container *ngIf="report$ | async as report">
   <h1>Last game</h1>
   {{ gameOverMessage | async }}
-  <button *ngIf="report$ | async as report" (click)="downloadReport(report)">Download Report</button>
+  <button (click)="downloadReport(report)">Download Report</button>
 </ng-container>
 
 <h1>Currently logged in players</h1>
-<button *ngFor="let player of lobby | async">{{ player }}</button>
+<ng-container *ngIf="lobby.length; else noPlayer">
+  <button *ngFor="let player of lobby">{{ player }}</button>
+</ng-container>
+
+<ng-template #noPlayer><h3>No player</h3></ng-template>
+
+<h1>Chat</h1>
+<form [formGroup]="form" (ngSubmit)="sendChatMessage()">
+  <input type="text" formControlName="chat">
+  <button type="submit" [disabled]="!form.valid">Send</button>
+</form>
+<div *ngFor="let message of chat">{{ message.login }}: {{ message.message }}</div>

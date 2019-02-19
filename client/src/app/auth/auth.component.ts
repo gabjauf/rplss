@@ -24,12 +24,13 @@ export class AuthComponent implements OnInit {
       switch (message.command) {
         case 'LOBBY_JOINED':
           if (message.parameters === this.login) {
-            this._router.navigate(['/lobby']);
             this._socketService.login = this.login;
+            this._router.navigate(['/lobby']);
           }
           break;
         case 'LOBBY':
           this.error = 'Username is already in use';
+          break;
       }
     });
   }
