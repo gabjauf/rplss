@@ -51,7 +51,6 @@ public class Game extends Thread {
         player1.incommingMessage
             .doOnError(e -> e.printStackTrace())
             .subscribe(message -> {
-            System.out.println("InGame1: " + message.getKey());
             switch (message.getKey()) {
                 case "MOVE":
                     player1Move = message.getValue();
@@ -61,7 +60,6 @@ public class Game extends Thread {
         player2.incommingMessage
             .doOnError(e -> e.printStackTrace())
             .subscribe(message -> {
-            System.out.println("InGame1: " + message.getKey());
             switch (message.getKey()) {
                 case "MOVE":
                     player2Move = message.getValue();

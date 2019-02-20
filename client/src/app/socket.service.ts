@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Observable, Subject, ReplaySubject } from 'rxjs';
 import { Router } from '@angular/router';
+import { environment } from 'src/environments/environment';
 
-const SERVER_URL = 'ws://127.0.0.1:4242';
+const SERVER_URL = `ws://${environment.RPSLS_HOST}:${environment.RPSLS_PORT}`;
 
 @Injectable({
   providedIn: 'root'

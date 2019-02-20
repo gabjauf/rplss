@@ -8,8 +8,8 @@ public class rplss {
     public static void main(String[] args) throws IOException {
 
         Map<String, String> env = System.getenv();
-        int port = env.containsKey("RPSLS_HOST") ?
-            Integer.parseInt(env.get("RPSLS_HOST"))
+        int port = env.containsKey("RPSLS_PORT") ?
+            Integer.parseInt(env.get("RPSLS_PORT"))
             : 4242;
 
 

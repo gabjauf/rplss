@@ -4,6 +4,8 @@
 
 export const environment = {
   production: false,
+  RPSLS_HOST: '127.0.0.1',
+  RPSLS_PORT: 4242,
   MOVE_TIMEOUT: 5
 };
 
