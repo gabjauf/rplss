@@ -56,6 +56,18 @@ export class SocketService {
     return this.socket.send(`CHAT------------${this.login};${message}\n`);
   }
 
+  public sendChallenge(challengedPlayer) {
+    return this.socket.send(`CHALLENGE-------${this.login};${challengedPlayer}\n`);
+  }
+
+  public replyChallengeKO(challenger) {
+    return this.socket.send(`CHALLENGE_KO----${challenger};${this.login}\n`);
+  }
+
+  public replyChallengeOK(challenger) {
+    return this.socket.send(`CHALLENGE_OK----${challenger};${this.login}\n`);
+  }
+
   parseMessage(message: string) {
     return {
       command: message.substring(0, 15).substring(0, message.indexOf('-')),

@@ -15,11 +15,7 @@ import javafx.util.Pair;
 
 public class Player extends Thread {
     String login;
-    Player opponent;
     WebSocket socket;
-    BufferedReader input;
-    PrintWriter output;
-    Subscription authReq;
     Disposable authTimer;
     Map<String, String> env = System.getenv();
     int LOGIN_TIMEOUT = env.containsKey("RPSLS_LOGIN_TIMEOUT") ?

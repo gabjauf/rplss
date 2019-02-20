@@ -5,9 +5,19 @@
 </ng-container>
 
 <h1>Currently logged in players</h1>
-<ng-container *ngIf="lobby.length; else noPlayer">
-  <button *ngFor="let player of lobby">{{ player }}</button>
+<ng-container *ngIf="challengeTimer | async as timeLeft; else players">
+  <h3 *ngIf="challengingPlayer">{{ challengingPlayer }} is challenging you!</h3>
+  <h3 *ngIf="challengedPlayer">You are challenging {{ challengedPlayer }}!</h3>
+  <div>{{ timeLeft }} seconds left to answer </div>
+  <ng-container *ngIf="challengingPlayer">
+    <button (click)="replyChallengeOK()">Accept</button> <button (click)="replyChallengeKO()">Refuse</button>
+  </ng-container>
 </ng-container>
+<ng-template #players>
+  <ng-container *ngIf="lobby?.length; else noPlayer">
+    <button *ngFor="let player of lobby" (click)="sendChallenge(player)">{{ player }}</button>
+  </ng-container>
+</ng-template>
 
 <ng-template #noPlayer><h3>No player</h3></ng-template>
 

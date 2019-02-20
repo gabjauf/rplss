@@ -1,4 +1,5 @@
 import io.reactivex.Observable;
+import io.reactivex.functions.Action;
 import io.reactivex.subjects.PublishSubject;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -23,6 +24,7 @@ public class WebsocketServer extends WebSocketServer {
     private HashMap<WebSocket, Player> socketPlayerHashMap;
     private List<Player> lobby;
     private HashMap<Player, Game> games;
+    private HashMap<String, Observable> challenges;
     private PublishSubject<Pair<Player, Player>> gameCallback;
     private int port;
 
@@ -32,6 +34,7 @@ public class WebsocketServer extends WebSocketServer {
         players = new HashSet<>();
         lobby = new ArrayList<>();
         games = new HashMap<>();
+        challenges = new HashMap<>();
         gameCallback =  PublishSubject.create();
         socketPlayerHashMap = new HashMap<>();
         gameCallback.subscribe(playerPair -> {
@@ -70,6 +73,7 @@ public class WebsocketServer extends WebSocketServer {
     public void onMessage(WebSocket conn, String message) {
         System.out.println("Message from client: " + message);
         Player currentPlayer = socketPlayerHashMap.get(conn);
+        List<String> playersLogin = lobby.stream().map(p -> p.login).collect(Collectors.toList());
         Pair<String, String> command = socketHelper.messageBroker(message);
         switch (command.getKey()) {
             case "AUTH":
@@ -78,21 +82,41 @@ public class WebsocketServer extends WebSocketServer {
                     currentPlayer.login = command.getValue();
                     broadcastLobbyJoined(currentPlayer);
                     broadcastLobby();
-                    if (lobby.size() > 1) {
-                        Player player1 = lobby.get(0);
-                        Player player2 = lobby.get(1);
-                        Game newGame = new Game(player1, player2, gameCallback);
-                        games.put(player1, newGame);
-                        games.put(player2, newGame);
-                        broadcastLobbyLeft(player1);
-                        broadcastLobbyLeft(player2);
-                    }
                 } else {
                     sendLobby(currentPlayer);
                 }
                 break;
             case "CHAT":
                 broadcastChat(message);
+                break;
+            case "CHALLENGE":
+                Observable challengeTimer = Observable.timer(5, TimeUnit.SECONDS);
+                String[] challengeLogins = command.getValue().split(";");
+                Player challengedPlayer = lobby.get(playersLogin.indexOf(challengeLogins[1]));
+                challenges.put(challengeLogins[1], challengeTimer);
+                challengedPlayer.socket.send(message);
+                challengeTimer.doOnComplete(() -> {
+                    challenges.remove(challengeLogins[1]);
+                }).subscribe();
+                break;
+            case "CHALLENGE_KO":
+                String[] challengeKoLogins = command.getValue().split(";");
+                challenges.remove(challengeKoLogins[1]);
+                break;
+            case "CHALLENGE_OK":
+                String[] logins = command.getValue().split(";");
+                if (challenges.containsKey(logins[1])) {
+                    // Not an incredible way of doing this, should probably change lobby datastructure
+                    Player player1 = lobby.get(playersLogin.indexOf(logins[0]));
+                    Player player2 = lobby.get(playersLogin.indexOf(logins[1]));
+                    if (player1 != null && player2 != null) {
+                        Game newGame = new Game(player1, player2, gameCallback);
+                        games.put(player1, newGame);
+                        games.put(player2, newGame);
+                        broadcastLobbyLeft(player1);
+                        broadcastLobbyLeft(player2);
+                    }
+                }
                 break;
             case "MOVE":
                 currentPlayer.incommingMessage.onNext(command);
