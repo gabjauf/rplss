@@ -15,7 +15,7 @@ import javafx.util.Pair;
 
 public class Game extends Thread {
 
-    final int SCORE_TO_WIN = 3;
+    final int SCORE_TO_WIN = 8;
 
     Player player1;
     Player player2;

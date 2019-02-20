@@ -11,7 +11,7 @@ import { Router } from '@angular/router';
 export class AuthComponent implements OnInit {
 
   form = this._fb.group({
-    login: ['', Validators.required]
+    login: ['', [Validators.required, Validators.pattern('[A-Za-z0-9]{3,16}')]]
   });
 
   login = '';

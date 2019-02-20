@@ -63,9 +63,7 @@ public class WebsocketServer extends WebSocketServer {
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        Player toRemove = socketPlayerHashMap.get(conn);
-        players.remove(toRemove);
-        broadcastLobbyLeft(toRemove);
+        close(conn);
         System.out.println("Closed connection to " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
     }
 
@@ -132,12 +130,21 @@ public class WebsocketServer extends WebSocketServer {
         ex.printStackTrace();
 
         if (conn != null) {
-            Player toRemove = socketPlayerHashMap.get(conn);
-            players.remove(toRemove);
+            close(conn);
             // do some thing if required
             System.out.println("ERROR from " + conn.getRemoteSocketAddress().getAddress().getHostAddress());
         }
 
+    }
+
+    private void close(WebSocket conn) {
+        Player toRemove = socketPlayerHashMap.get(conn);
+        players.remove(toRemove);
+        if (lobby.contains(toRemove)) {
+            lobby.remove(toRemove);
+            broadcastLobbyLeft(toRemove);
+        }
+        socketPlayerHashMap.remove(conn, toRemove);
     }
 
     @Override
