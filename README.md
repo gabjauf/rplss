@@ -15,7 +15,7 @@ I used maven for packages (IntelliJ should download automatically).
 Use IntelliJ to launch.
 
 You can configure the following:
-- RPSLS_PORT: port number (default 4242)
+- RPSLS_PORT: port number (default 4242, need to synchronize with front-end because angular does not support setting from env)
 - RPSLS_HOST: host name (default: 127.0.0.1)
 - RPSLS_MOVE_TIMEOUT: for move timeout (should also be configured in front-end environment.ts)
 - RPSLS_LOGIN_TIMEOUT: defines how often the server will ask the client for credentials
