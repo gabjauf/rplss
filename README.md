@@ -11,6 +11,7 @@ Multiplayer Rock Paper Lizard Scissor Spock in Java / Javascript made with webso
 # Setup
 
 ## Server side
+This project is built with java 9.
 I used maven for packages (IntelliJ should download automatically).
 Use IntelliJ to launch.
 
