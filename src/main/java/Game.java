@@ -1,16 +1,11 @@
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
-import io.reactivex.functions.Predicate;
 import io.reactivex.subjects.PublishSubject;
 
-import javax.lang.model.type.ArrayType;
-import java.lang.reflect.Array;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 public class Game extends Thread {

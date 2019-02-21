@@ -2,15 +2,11 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.subjects.PublishSubject;
 import org.java_websocket.WebSocket;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.*;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import javafx.util.Pair;
 
 public class Player extends Thread {
